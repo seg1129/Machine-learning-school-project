@@ -11,6 +11,9 @@ import os.path
 import csv 
 from sklearn.impute import SimpleImputer
 from sklearn import preprocessing
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+from matplotlib import pyplot
 
 # data prep functions
 class Data_prep2:
@@ -150,8 +153,93 @@ class Data_prep2:
             return 0
         else:
             return 1
+
+    def plot_OneModel_ROC(self, nb, x_test,y_test, labelText='Bayes'):
+
+        # generate a no skill prediction (majority class)
+        ns_probs = [0 for _ in range(len(y_test))]
         
+        # predict probabilities
+        nb_probs = nb.predict_proba(x_test)
+
+        # keep probabilities for the positive outcome only
+        nb_probs = nb_probs[:, 1]
+
+
+        # calculate scores
+        ns_auc = roc_auc_score(y_test, ns_probs)
+        nb_auc = roc_auc_score(y_test, nb_probs)
+
+
+        # summarize scores
+        print('Chance Level: ROC AUC=%.3f' % (ns_auc))
+        print('Bayes: ROC AUC=%.3f' % (nb_auc))
+
+
+        # calculate roc curves
+        ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
+        nb_fpr, nb_tpr, _ = roc_curve(y_test, nb_probs)
+
+        #50% marker above this line means a good model, below means bad.  
+        pyplot.plot(ns_fpr, ns_tpr, linestyle='--', label='Chance Level')
         
+        # plot the roc curve for the model
+        pyplot.plot(nb_fpr, nb_tpr, marker='.', label=labelText)
+
+        # axis labels
+        pyplot.xlabel('False Positive Rate')
+        pyplot.ylabel('True Positive Rate')
+        
+        return pyplot
+    
+    def Plot_ROC_ForAllModels(nb, decision_tree_model, model,x_test,y_test):
+    
+        # generate a no skill prediction (majority class)
+        ns_probs = [0 for _ in range(len(y_test))]
+        
+        # predict probabilities for models
+        nb_probs = nb.predict_proba(x_test)
+        dt_probs = decision_tree_model.predict_proba(x_test)
+        lr_probs = model.predict_proba(x_test)
+
+        # keep probabilities for the positive outcome only
+        nb_probs = nb_probs[:, 1]
+        dt_probs = dt_probs[:, 1]
+        lr_probs = lr_probs[:, 1]
+
+
+        # calculate scores
+        ns_auc = roc_auc_score(y_test, ns_probs)
+        nb_auc = roc_auc_score(y_test, nb_probs)
+        dt_auc = roc_auc_score(y_test, dt_probs)
+        lr_auc = roc_auc_score(y_test, lr_probs)
+
+        # summarize scores
+        print('Chance Level: ROC AUC=%.3f' % (ns_auc))
+        print('Bayes: ROC AUC=%.3f' % (nb_auc))
+        print('Decision Tree: ROC AUC=%.3f' % (dt_auc))
+        print('Logistic: ROC AUC=%.3f' % (lr_auc))
+
+        # calculate roc curves
+        ns_fpr, ns_tpr, _ = roc_curve(y_test, ns_probs)
+        nb_fpr, nb_tpr, _ = roc_curve(y_test, nb_probs)
+        dt_fpr, dt_tpr, _ = roc_curve(y_test, dt_probs)
+        lr_fpr, lr_tpr, _ = roc_curve(y_test, lr_probs)
+
+        # plot the roc curve for the models
+        #50% marker above this line means a good model.  Closest to this line is the best model
+        pyplot.plot(ns_fpr, ns_tpr, linestyle='--', label='Chance Level') 
+        
+        pyplot.plot(nb_fpr, nb_tpr, linestyle='--', label='Bayes')
+        pyplot.plot(lr_fpr, lr_tpr, marker='.', label='Logistic')
+        pyplot.plot(dt_fpr, dt_tpr, marker='.', label='Decision Tree')
+
+        # axis labels
+        pyplot.xlabel('False Positive Rate')
+        pyplot.ylabel('True Positive Rate')
+        
+        return pyplot
+                
 
     def getPreprocessedArrestData(self):
         arrest_dataFrame = self.get_arrest_data2().copy()

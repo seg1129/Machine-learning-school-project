@@ -60,9 +60,7 @@ class Data_prep2:
             np_data[:, indexOfY:] = np.roll(np_data[:, indexOfY:], -1, 1)
         else:
             print("Your Y index is out of range, cannot move column")
-        print("column type: ", type(columns))
         df_transf_data = pd.DataFrame(np_data, columns = columns)
-        #df_transf_data.rename(columns = {'is_white', 'is_black', 'warning_issued'}'is_hispanic', 'is_asian'
         
         return df_transf_data
                               
@@ -82,8 +80,6 @@ class Data_prep2:
             fname = os.path.join(data_file, 'tn_nashville_2020_04_01.csv')
             data = pd.read_csv(fname, on_bad_lines='skip', dtype=str)
         columns = list(data)
-        print("columns: ", columns)
-        print("data shape after import: ", data.shape)
         return data
 
     def encodeFeatures(self, dataframe,skipColumnsList=[]):
@@ -98,8 +94,6 @@ class Data_prep2:
     def replaceNulls(self, data):
     #takes in a numpy array and replaces missing null values with the most frequent values in that column
         columns = data.columns
-        print("columns: ", columns)
-        print("data shape: ", data.shape)
         np_arrest_data = data.to_numpy()
         imp = SimpleImputer(missing_values=np.nan, strategy='most_frequent')
         imp.fit(np_arrest_data)
@@ -154,7 +148,9 @@ class Data_prep2:
         else:
             return 1
 
-    def plot_OneModel_ROC(self, nb, x_test,y_test, labelText='Bayes'):
+    ####### Data Analysis functions #######
+        
+    def plot_OneModel_ROC(nb, x_test,y_test, labelText='Bayes'):
 
         # generate a no skill prediction (majority class)
         ns_probs = [0 for _ in range(len(y_test))]
@@ -237,48 +233,35 @@ class Data_prep2:
         # axis labels
         pyplot.xlabel('False Positive Rate')
         pyplot.ylabel('True Positive Rate')
+        pyplot.title('ROC for Bayes, Logistic and Decision Tree models')
+        pyplot.legend()
         
         return pyplot
                 
-
+####### end data analysis functions #######
+    
     def getPreprocessedArrestData(self):
         arrest_dataFrame = self.get_arrest_data2().copy()
-        # arrest_dataFrame = arrest_dataFrame.dropna()
-        # arrest_data = arrest_dataFrame[['subject_race', 'subject_sex','subject_age','time','violation','frisk_performed','search_vehicle','arrest_made']].copy()
         arrest_data = arrest_dataFrame[['subject_race', 'subject_sex','subject_age','time','violation','frisk_performed','search_vehicle','warning_issued']].copy()
         arrest_data = self.replaceNulls(arrest_data)
         arrest_data = self.seperate_race_columns(arrest_data)
-        
-        # arrest_data = arrest_dataFrame[['subject_sex', 'subject_age', 'time', 'violation', 'frisk_performed', 'search_vehicle', 'is_white', 'is_black', 'is_hispanic', 'is_asian', 'warning_issued']].copy()
-        # yhat_index_no = arrest_data.columns.get_loc('warning_issued')
-        # print("yhat index number: ", yhat_index_no)
-        # arrest_data = self.moveYcolumnToEnd(arrest_data, yhat_index_no)
         arrest_data = self.move_y_col_end_df(arrest_data, 'warning_issued')
-        print("final column order: ", arrest_data.columns)
-        #print(arrest_data.head(10))
-        #arrest_data = truncateTime(data)
         arrest_data['time'] = arrest_data['time'].apply(lambda x : self.truncateTime(x))
         arrest_data['subject_age'] = arrest_data['subject_age'].apply(lambda x : self.convertAgeFeature(x))
-        # arrest_data['subject_race'] = arrest_data['subject_race'].apply(lambda x : self.convert_race_boolean(x))
-        #skipColumnsList=['time','subject_age']
         arrest_data = self.encodeFeatures(arrest_data)   
-        #data = data.to_numpy()
-        #arrest_data=replaceNulls(data)
+        arrest_data = arrest_data.to_numpy()
+
         return arrest_data
 
     def getPreprocessedArrestDataWithoutRace(self):
         arrest_dataFrame = self.get_arrest_data2().copy()
-        # arrest_dataFrame = arrest_dataFrame.dropna()
         arrest_data = arrest_dataFrame[['subject_sex','subject_age','time','violation','frisk_performed','search_vehicle','arrest_made']].copy()
         arrest_data = arrest_dataFrame[['subject_race', 'subject_sex','subject_age','time','violation','frisk_performed','search_vehicle','warning_issued']].copy()
-        # arrest_data = self.replaceNulls(arrest_data)
-        #arrest_data = truncateTime(data)
         arrest_data['time'] = arrest_data['time'].apply(lambda x : self.truncateTime(x))
         arrest_data['subject_age'] = arrest_data['subject_age'].apply(lambda x : self.convertAgeFeature(x))
-        #skipColumnsList=['time','subject_age']
         arrest_data = self.encodeFeatures(arrest_data)    
-        #data = data.to_numpy()
-        #arrest_data=replaceNulls(data)
+        arrest_data = arrest_data.to_numpy()
+
         return arrest_data
 
         
